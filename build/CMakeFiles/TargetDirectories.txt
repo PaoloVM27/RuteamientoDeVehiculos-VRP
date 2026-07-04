@@ -1,0 +1,5 @@
+C:/Users/USUARIO/Documents/VRP_Logistica/build/CMakeFiles/VRP_Logistica.dir
+C:/Users/USUARIO/Documents/VRP_Logistica/build/CMakeFiles/edit_cache.dir
+C:/Users/USUARIO/Documents/VRP_Logistica/build/CMakeFiles/rebuild_cache.dir
+C:/Users/USUARIO/Documents/VRP_Logistica/build/CMakeFiles/VRP_Logistica_autogen_timestamp_deps.dir
+C:/Users/USUARIO/Documents/VRP_Logistica/build/CMakeFiles/VRP_Logistica_autogen.dir

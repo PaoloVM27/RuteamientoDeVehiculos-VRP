@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mapa VRP Logística</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+    <style>
+        body { padding: 0; margin: 0; }
+        #mapa { height: 100vh; width: 100vw; }
+    </style>
+</head>
+<body>
+    <div id="mapa"></div>
+
+    <script>
+        var map = L.map('mapa').setView([-12.1610, -76.9388], 13);
+        var capaRutas = L.layerGroup().addTo(map);
+        var backendCplusplus = null; // Aquí guardaremos el puente a C++
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // 1. INICIALIZAR EL PUENTE CON C++
+        new QWebChannel(qt.webChannelTransport, function (channel) {
+            backendCplusplus = channel.objects.interfazBridge;
+            console.log("Conexión con C++ establecida correctamente.");
+        });
+
+        // 2. CAPTURAR CLIC EN EL MAPA Y ENVIAR A C++
+        map.on('click', function(e) {
+            if (backendCplusplus) {
+                var nombre = prompt("Ingrese el nombre de la Tienda / Cliente:");
+                if (nombre) {
+                    L.marker([e.latlng.lat, e.latlng.lng]).addTo(map).bindPopup(nombre).openPopup();
+                    // Llamamos a la función nativa de C++
+                    backendCplusplus.recibirCoordenadasCliente(e.latlng.lat, e.latlng.lng, nombre);
+                }
+            }
+        });
+
+        // 3. FUNCIÓN QUE C++ INVOCARÁ PARA DIBUJAR LAS CALLES
+        async function dibujarRutaVial(lat1, lng1, lat2, lng2, colorHex) {
+            const url = `http://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?geometries=geojson`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if(data.routes && data.routes.length > 0) {
+                    L.geoJSON(data.routes[0].geometry, {
+                        style: { color: colorHex, weight: 5, opacity: 0.8 }
+                    }).addTo(capaRutas);
+                }
+            } catch (error) {
+                console.error("Error en OSRM:", error);
+            }
+        }
+
+        function limpiarRutasPantalla() {
+            capaRutas.clearLayers();
+        }
+    </script>
+</body>
+</html>
