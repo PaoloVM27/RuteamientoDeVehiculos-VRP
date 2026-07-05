@@ -1,1 +1,4 @@
-/build
+# Ignorar el directorio 'build'
+build/
+
+# Opcional: Limpiar archivos de cache y temporales de Qt/CMake que puedan estar fuera de 'build'

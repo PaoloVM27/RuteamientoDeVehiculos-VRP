@@ -175,6 +175,45 @@
         }
         rutasPorVehiculo = {};
     }
+
+    // ── Limpiar todos los marcadores de depósito y tiendas ───────────────
+    // Llamado desde C++ antes de cargar una sesión guardada
+    var marcadoresClientes = [];
+
+    function limpiarMarcadores() {
+        if (marcadorDeposito) {
+            map.removeLayer(marcadorDeposito);
+            marcadorDeposito = null;
+        }
+        marcadoresClientes.forEach(function(m) { map.removeLayer(m); });
+        marcadoresClientes = [];
+        limpiarRutasPantalla();
+    }
+
+    // ── Versión para cargar sesión: coloca el depósito en lat/lng exacto ─
+    // No notifica al bridge (C++ ya reconstruyó listaNodos al cargar el JSON)
+    function agregarMarcadorDepositoEnPos(nombre, lat, lng) {
+        if (marcadorDeposito) { map.removeLayer(marcadorDeposito); marcadorDeposito = null; }
+        marcadorDeposito = L.marker([lat, lng], { draggable: true, icon: iconDeposito() }).addTo(map);
+        marcadorDeposito.bindPopup('<b>&#127978; DEPÓSITO</b><br>' + nombre + '<br><small>Arrastra para mover</small>');
+        marcadorDeposito.on('dragend', function(ev) {
+            var p = ev.target.getLatLng(); ev.target.openPopup();
+            if (backendCplusplus) backendCplusplus.actualizarPosicionNodo(nombre, p.lat, p.lng);
+        });
+        map.setView([lat, lng], map.getZoom());
+    }
+
+    // ── Versión para cargar sesión: coloca una tienda en lat/lng exacto ──
+    // No notifica al bridge (C++ ya reconstruyó listaNodos al cargar el JSON)
+    function agregarMarcadorClienteEnPos(nombre, demanda, lat, lng) {
+        var m = L.marker([lat, lng], { draggable: true, icon: iconCliente() }).addTo(map);
+        m.bindPopup('<b>' + nombre + '</b><br>&#128230; Demanda: ' + demanda + '<br><small>Arrastra para mover</small>');
+        marcadoresClientes.push(m);
+        m.on('dragend', function(ev) {
+            var p = ev.target.getLatLng(); ev.target.openPopup();
+            if (backendCplusplus) backendCplusplus.actualizarPosicionNodo(nombre, p.lat, p.lng);
+        });
+    }
 </script>
 </body>
 </html>

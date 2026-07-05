@@ -21,6 +21,11 @@
 #include <QFile>
 #include <QListWidget>
 #include <QMessageBox>
+#include <QFileDialog>
+#include <QTextStream>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 // Headers propios del proyecto — fuente única de verdad para las estructuras
 #include "Estructuras.hpp"
@@ -185,6 +190,36 @@ int main(int argc, char *argv[]) {
     QLabel *lblDemandaTotal = new QLabel("Demanda total del viaje: 0", leftPanel);
     leftLayout->addWidget(lblDemandaTotal);
 
+    // Botones Guardar / Cargar sesión
+    QHBoxLayout *sesionLayout = new QHBoxLayout();
+    QPushButton *btnGuardar = new QPushButton("💾 Guardar sesión", leftPanel);
+    QPushButton *btnCargar  = new QPushButton("📂 Cargar sesión",  leftPanel);
+    btnGuardar->setStyleSheet(
+        "QPushButton {"
+        "   background-color: #5c6bc0;"
+        "   color: white;"
+        "   font-weight: bold;"
+        "   padding: 8px;"
+        "   border-radius: 5px;"
+        "}"
+        "QPushButton:hover { background-color: #3f51b5; }"
+    );
+    btnCargar->setStyleSheet(
+        "QPushButton {"
+        "   background-color: #00897b;"
+        "   color: white;"
+        "   font-weight: bold;"
+        "   padding: 8px;"
+        "   border-radius: 5px;"
+        "}"
+        "QPushButton:hover { background-color: #00695c; }"
+    );
+    btnGuardar->setCursor(Qt::PointingHandCursor);
+    btnCargar->setCursor(Qt::PointingHandCursor);
+    sesionLayout->addWidget(btnGuardar);
+    sesionLayout->addWidget(btnCargar);
+    leftLayout->addLayout(sesionLayout);
+
     leftLayout->addSpacing(10);
 
     // Selector de Algoritmo
@@ -302,10 +337,10 @@ int main(int argc, char *argv[]) {
     });
 
     // Botón Agregar Tienda → crea marcador draggable en el centro del mapa
-    // Usamos un contador estático para generar nombres únicos por defecto
-    static int contTienda = 1;
-    static double totalDemandaAcumulada = 0;
-    QObject::connect(btnAgregarTienda, &QPushButton::clicked, [=]() mutable {
+    // Usamos un contador para generar nombres únicos por defecto
+    int contTienda = 1;
+    double totalDemandaAcumulada = 0.0;
+    QObject::connect(btnAgregarTienda, &QPushButton::clicked, [&]() {
         QString nombre  = txtNombreTienda->text().trimmed();
         double  demanda = txtDemandaTienda->text().toDouble();
         if (nombre.isEmpty()) nombre = QString("Tienda %1").arg(contTienda);
@@ -317,6 +352,234 @@ int main(int argc, char *argv[]) {
             QString("agregarMarcadorCliente('%1', %2);").arg(nombre).arg(demanda));
         txtNombreTienda->clear();
         txtDemandaTienda->clear();
+    });
+
+    // ── Guardar sesión ────────────────────────────────────────────────────
+    // Serializa depósito + tiendas + vehículos a un archivo .vrp (JSON)
+    QObject::connect(btnGuardar, &QPushButton::clicked, [=, &mainWindow]() {
+        if (bridge->listaNodos.empty() && bridge->listaVehiculos.empty()) {
+            QMessageBox::warning(&mainWindow, "Sesión vacía",
+                "No hay datos para guardar. Agrega al menos un depósito o una tienda.");
+            return;
+        }
+
+        QString ruta = QFileDialog::getSaveFileName(
+            &mainWindow,
+            "Guardar sesión VRP",
+            QDir::homePath() + "/sesion_vrp.vrp",
+            "Sesión VRP (*.vrp);;JSON (*.json)"
+        );
+        if (ruta.isEmpty()) return;
+
+        // ── Construir JSON ────────────────────────────────────────────────
+        QJsonObject root;
+        root["version"] = 1;
+
+        // Depósito (primer nodo con esDeposito == true)
+        QJsonObject jDeposito;
+        bool hayDeposito = false;
+        for (const auto& nd : bridge->listaNodos) {
+            if (nd.esDeposito) {
+                jDeposito["nombre"] = QString::fromStdString(nd.nombre);
+                jDeposito["lat"]    = static_cast<double>(nd.pos_y);
+                jDeposito["lng"]    = static_cast<double>(nd.pos_x);
+                hayDeposito = true;
+                break;
+            }
+        }
+        if (hayDeposito) root["deposito"] = jDeposito;
+
+        // Tiendas (todos los nodos que NO son depósito)
+        QJsonArray jTiendas;
+        for (const auto& nd : bridge->listaNodos) {
+            if (nd.esDeposito) continue;
+            QJsonObject jT;
+            jT["nombre"]  = QString::fromStdString(nd.nombre);
+            jT["lat"]     = static_cast<double>(nd.pos_y);
+            jT["lng"]     = static_cast<double>(nd.pos_x);
+            jT["demanda"] = static_cast<double>(nd.demanda);
+            jTiendas.append(jT);
+        }
+        root["tiendas"] = jTiendas;
+
+        // Vehículos
+        QJsonArray jVehiculos;
+        for (const auto& v : bridge->listaVehiculos) {
+            QJsonObject jV;
+            jV["placa"]     = QString::fromStdString(v.placa);
+            jV["capacidad"] = static_cast<double>(v.capacidad);
+            jVehiculos.append(jV);
+        }
+        root["vehiculos"] = jVehiculos;
+
+        // ── Escribir archivo ──────────────────────────────────────────────
+        QFile archivo(ruta);
+        if (!archivo.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QMessageBox::critical(&mainWindow, "Error", "No se pudo crear el archivo:\n" + ruta);
+            return;
+        }
+        archivo.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+        archivo.close();
+
+        int nTiendas   = static_cast<int>(jTiendas.count());
+        int nVehiculos = static_cast<int>(jVehiculos.count());
+        QMessageBox::information(&mainWindow, "Sesión guardada",
+            QString("Archivo guardado correctamente.\n\n"
+                    "Depósito: %1\n"
+                    "Tiendas guardadas: %2\n"
+                    "Vehículos guardados: %3\n\n"
+                    "Ruta: %4")
+            .arg(hayDeposito ? QString::fromStdString(
+                     bridge->listaNodos[0].nombre) : "(ninguno)")
+            .arg(nTiendas)
+            .arg(nVehiculos)
+            .arg(ruta));
+    });
+
+    // ── Cargar sesión ─────────────────────────────────────────────────────
+    // Lee un archivo .vrp y restaura el estado completo de la aplicación
+    QObject::connect(btnCargar, &QPushButton::clicked, [&]() {
+        QString ruta = QFileDialog::getOpenFileName(
+            &mainWindow,
+            "Cargar sesión VRP",
+            QDir::homePath(),
+            "Sesión VRP (*.vrp);;JSON (*.json);;Todos (*.*)"
+        );
+        if (ruta.isEmpty()) return;
+
+        QFile archivo(ruta);
+        if (!archivo.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QMessageBox::critical(&mainWindow, "Error", "No se pudo abrir el archivo:\n" + ruta);
+            return;
+        }
+        QByteArray datos = archivo.readAll();
+        archivo.close();
+
+        QJsonParseError err;
+        QJsonDocument doc = QJsonDocument::fromJson(datos, &err);
+        if (doc.isNull() || !doc.isObject()) {
+            QMessageBox::critical(&mainWindow, "Error de formato",
+                "El archivo no es un JSON válido:\n" + err.errorString());
+            return;
+        }
+
+        QJsonObject root = doc.object();
+        if (root["version"].toInt() != 1) {
+            QMessageBox::warning(&mainWindow, "Versión desconocida",
+                "El archivo fue guardado con una versión distinta del programa.\
+ Se intentará cargar de todas formas.");
+        }
+
+        // ── Limpiar estado actual ─────────────────────────────────────────
+        bridge->listaNodos.clear();
+        bridge->listaVehiculos.clear();
+        listaVehiculosUI->clear();
+        contTienda             = 1;
+        totalDemandaAcumulada  = 0.0;
+        lblDemandaTotal->setText("Demanda total del viaje: 0");
+
+        // Limpiar marcadores y rutas en el mapa
+        mapView->page()->runJavaScript(
+            "if (typeof limpiarMarcadores === 'function') limpiarMarcadores();");
+
+        // ── Restaurar depósito ────────────────────────────────────────────
+        if (root.contains("deposito") && root["deposito"].isObject()) {
+            QJsonObject jDep = root["deposito"].toObject();
+            QString depNombre = jDep["nombre"].toString("Depósito Central");
+            double  depLat    = jDep["lat"].toDouble();
+            double  depLng    = jDep["lng"].toDouble();
+
+            // Reconstruir nodo en el bridge
+            Nodo dep;
+            dep.id          = 0;
+            dep.grafoNodeId = 0;
+            dep.nombre      = depNombre.toStdString();
+            dep.pos_x       = static_cast<float>(depLng);
+            dep.pos_y       = static_cast<float>(depLat);
+            dep.esDeposito  = true;
+            dep.demanda     = 0.f;
+            bridge->listaNodos.push_back(dep);
+
+            // Dibujar marcador en el mapa en la posición exacta guardada
+            QString depNombreEscapado = depNombre;
+            depNombreEscapado.replace("'", "\\'");
+            mapView->page()->runJavaScript(
+                QString("agregarMarcadorDepositoEnPos('%1', %2, %3);")
+                .arg(depNombreEscapado)
+                .arg(depLat, 0, 'f', 8)
+                .arg(depLng, 0, 'f', 8));
+        }
+
+        // ── Restaurar tiendas ─────────────────────────────────────────────
+        if (root.contains("tiendas") && root["tiendas"].isArray()) {
+            QJsonArray jTiendas = root["tiendas"].toArray();
+            for (const QJsonValue& val : jTiendas) {
+                if (!val.isObject()) continue;
+                QJsonObject jT      = val.toObject();
+                QString  nombre     = jT["nombre"].toString(
+                    QString("Tienda %1").arg(contTienda));
+                double   lat        = jT["lat"].toDouble();
+                double   lng        = jT["lng"].toDouble();
+                double   demanda    = jT["demanda"].toDouble();
+
+                // Reconstruir nodo en el bridge
+                Nodo nd;
+                nd.id          = static_cast<int>(bridge->listaNodos.size());
+                nd.grafoNodeId = nd.id;
+                nd.nombre      = nombre.toStdString();
+                nd.pos_x       = static_cast<float>(lng);
+                nd.pos_y       = static_cast<float>(lat);
+                nd.esDeposito  = false;
+                nd.demanda     = static_cast<float>(demanda);
+                bridge->listaNodos.push_back(nd);
+
+                totalDemandaAcumulada += demanda;
+                contTienda++;
+
+                // Dibujar marcador en el mapa en la posición exacta guardada
+                QString nombreEscapado = nombre;
+                nombreEscapado.replace("'", "\\'");
+                mapView->page()->runJavaScript(
+                    QString("agregarMarcadorClienteEnPos('%1', %2, %3, %4);")
+                    .arg(nombreEscapado)
+                    .arg(demanda, 0, 'f', 4)
+                    .arg(lat, 0, 'f', 8)
+                    .arg(lng, 0, 'f', 8));
+            }
+        }
+
+        // ── Restaurar vehículos ───────────────────────────────────────────
+        if (root.contains("vehiculos") && root["vehiculos"].isArray()) {
+            QJsonArray jVehiculos = root["vehiculos"].toArray();
+            for (const QJsonValue& val : jVehiculos) {
+                if (!val.isObject()) continue;
+                QJsonObject jV  = val.toObject();
+                QString placa   = jV["placa"].toString();
+                float capacidad = static_cast<float>(jV["capacidad"].toDouble());
+
+                Vehiculo v;
+                v.placa     = placa.toStdString();
+                v.capacidad = capacidad;
+                bridge->listaVehiculos.push_back(v);
+
+                listaVehiculosUI->addItem(
+                    QString("  %1  |  Cap: %2").arg(placa).arg(capacidad));
+            }
+        }
+
+        // Actualizar etiqueta de demanda total
+        lblDemandaTotal->setText(
+            QString("Demanda total del viaje: %1").arg(totalDemandaAcumulada));
+
+        int nTiendas   = static_cast<int>(bridge->listaNodos.size()) -
+                         (bridge->listaNodos.empty() ? 0 :
+                          bridge->listaNodos[0].esDeposito ? 1 : 0);
+        int nVehiculos = static_cast<int>(bridge->listaVehiculos.size());
+        QMessageBox::information(&mainWindow, "Sesión cargada",
+            QString("Sesión restaurada correctamente.\n\n"
+                    "Tiendas cargadas: %1\n"
+                    "Vehículos cargados: %2")
+            .arg(nTiendas).arg(nVehiculos));
     });
 
     // Lógica principal: Calcular la ruta
