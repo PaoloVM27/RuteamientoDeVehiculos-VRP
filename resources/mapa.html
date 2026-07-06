@@ -11,14 +11,11 @@
     <style>
         body, html { margin: 0; padding: 0; height: 100%; }
         #mapa { width: 100%; height: 100%; }
-
-        /* Control de capas: siempre visible, sin colapsar */
         .leaflet-control-layers-expanded {
             font-size: 13px;
             min-width: 140px;
         }
 
-        /* Etiqueta de parada sobre cada tienda */
         .vrp-stop-label {
             background: rgba(255,255,255,0.92);
             border: 1px solid #444;
@@ -155,7 +152,6 @@
             map.removeLayer(rutasPorVehiculo[id]);
         }
         rutasPorVehiculo = {};
-        // Quitar etiquetas de parada de todos los marcadores de tienda
         for (var k in marcadoresClientes) {
             try { marcadoresClientes[k].unbindTooltip(); } catch(e) {}
         }
@@ -203,7 +199,6 @@
         }
     }
 
-    // Etiqueta permanente encima de la tienda: "V{v} | P{orden}"
     function etiquetarParadaTienda(nombre, vehiculoLabel, punto) {
         var m = marcadoresClientes[nombre];
         if (!m) return;

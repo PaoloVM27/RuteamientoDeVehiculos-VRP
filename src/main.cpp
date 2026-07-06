@@ -34,24 +34,17 @@
 #include <cmath>
 #include <limits>
 
-// Headers propios del proyecto — fuente única de verdad para las estructuras
 #include "Algoritmos.hpp"
 #include "Estructuras.hpp"
-
-// ==========================================
-// Clase VrpBridge (Comunicación Qt <-> JS)
-// ==========================================
 
 class VrpBridge : public QObject {
   Q_OBJECT
 public:
   explicit VrpBridge(QObject *parent = nullptr) : QObject(parent) {}
 
-  std::vector<Nodo> listaNodos;         // Nodo de Estructuras.hpp
-  std::vector<Vehiculo> listaVehiculos; // Vehiculo de Estructuras.hpp
+  std::vector<Nodo> listaNodos;         
+  std::vector<Vehiculo> listaVehiculos; 
 
-  // Calcula la MatrizDist (float) con distancia euclidiana entre pos_x/pos_y.
-  // Los algoritmos reciben esta matriz en lugar de calcularla internamente.
   MatrizDist calcularMatrizDistancias() const {
     int n = static_cast<int>(listaNodos.size());
     MatrizDist matriz(n, std::vector<float>(n, 0.f));
@@ -68,7 +61,7 @@ public:
   }
 
 public slots:
-  // ── Invocado por JS al colocar/reemplazar el depósito central ────────────
+  
   Q_INVOKABLE void recibirDeposito(double lat, double lng, QString nombre) {
     Nodo dep;
     dep.pos_x = static_cast<float>(lng);
@@ -92,7 +85,6 @@ public slots:
     }
   }
 
-  // ── Invocado por JS al agregar un cliente (tienda/punto de entrega) ──────
   Q_INVOKABLE void recibirCoordenadasCliente(double lat, double lng,
                                              QString nombre, double demanda) {
     Nodo n;
@@ -106,8 +98,6 @@ public slots:
     listaNodos.push_back(n);
   }
 
-  // ── Invocado por JS cuando el usuario arrastra un marcador existente ──────
-  // Busca el nodo por nombre y actualiza sus coordenadas.
   Q_INVOKABLE void actualizarPosicionNodo(QString nombre, double lat,
                                           double lng) {
     std::string stdNombre = nombre.toStdString();
@@ -124,9 +114,6 @@ public slots:
 int main(int argc, char *argv[]) {
   QApplication app(argc, argv);
 
-  // ==========================================
-  // Configuración de la Ventana Principal
-  // ==========================================
   QMainWindow mainWindow;
   mainWindow.setWindowTitle("VRP Logística");
   mainWindow.resize(1280, 720);
@@ -134,9 +121,6 @@ int main(int argc, char *argv[]) {
   QSplitter *splitter = new QSplitter(Qt::Horizontal, &mainWindow);
   mainWindow.setCentralWidget(splitter);
 
-  // ==========================================
-  // Panel Izquierdo: Controles
-  // ==========================================
   QWidget *leftPanel = new QWidget(splitter);
   leftPanel->setMaximumWidth(320);
   leftPanel->setMinimumWidth(280);
@@ -144,7 +128,6 @@ int main(int argc, char *argv[]) {
   leftLayout->setSpacing(15);
   leftLayout->setContentsMargins(20, 20, 20, 20);
 
-  // Sección Depósito
   QLabel *lblDeposito = new QLabel("<b>Agregar Depósito</b>", leftPanel);
   leftLayout->addWidget(lblDeposito);
 
@@ -159,7 +142,6 @@ int main(int argc, char *argv[]) {
 
   leftLayout->addSpacing(10);
 
-  // Sección Vehículos
   QLabel *lblVehiculo = new QLabel("<b>Agregar Vehículo</b>", leftPanel);
   leftLayout->addWidget(lblVehiculo);
 
@@ -176,7 +158,6 @@ int main(int argc, char *argv[]) {
   vehiculoLayout->addWidget(btnAgregarVehiculo);
   leftLayout->addLayout(vehiculoLayout);
 
-  // Lista visual de vehículos registrados
   QListWidget *listaVehiculosUI = new QListWidget(leftPanel);
   listaVehiculosUI->setMaximumHeight(80);
   listaVehiculosUI->setFocusPolicy(Qt::StrongFocus);
@@ -192,7 +173,6 @@ int main(int argc, char *argv[]) {
 
   leftLayout->addSpacing(6);
 
-  // Sección Tiendas
   QLabel *lblTienda = new QLabel("<b>Agregar Tienda</b>", leftPanel);
   leftLayout->addWidget(lblTienda);
 
@@ -208,7 +188,6 @@ int main(int argc, char *argv[]) {
   tiendaLayout->addWidget(btnAgregarTienda);
   leftLayout->addLayout(tiendaLayout);
 
-  // Lista visual de tiendas registradas
   QListWidget *listaTiendasUI = new QListWidget(leftPanel);
   listaTiendasUI->setMaximumHeight(80);
   listaTiendasUI->setFocusPolicy(Qt::StrongFocus);
@@ -225,7 +204,6 @@ int main(int argc, char *argv[]) {
   QLabel *lblDemandaTotal = new QLabel("Demanda total del viaje: 0", leftPanel);
   leftLayout->addWidget(lblDemandaTotal);
 
-  // Botones Guardar / Cargar sesión
   QHBoxLayout *sesionLayout = new QHBoxLayout();
   QPushButton *btnGuardar = new QPushButton("Guardar sesión", leftPanel);
   QPushButton *btnCargar = new QPushButton("Cargar sesión", leftPanel);
@@ -253,7 +231,6 @@ int main(int argc, char *argv[]) {
 
   leftLayout->addSpacing(10);
 
-  // Selector de Algoritmo
   QLabel *lblAlgoritmo = new QLabel("<b>Seleccionar Algoritmo</b>", leftPanel);
   leftLayout->addWidget(lblAlgoritmo);
 
@@ -264,7 +241,6 @@ int main(int argc, char *argv[]) {
 
   leftLayout->addStretch();
 
-  // Botón Calcular Ruta
   QPushButton *btnCalcular = new QPushButton("CALCULAR RUTA", leftPanel);
   btnCalcular->setStyleSheet("QPushButton {"
                              "   background-color: #4CAF50;"
@@ -280,7 +256,6 @@ int main(int argc, char *argv[]) {
   btnCalcular->setCursor(Qt::PointingHandCursor);
   leftLayout->addWidget(btnCalcular);
 
-  // Botón Comparar Algoritmos
   QPushButton *btnComparar = new QPushButton("COMPARAR ALGORITMOS", leftPanel);
   btnComparar->setStyleSheet("QPushButton {"
                              "   background-color: #2196F3;"
@@ -296,7 +271,6 @@ int main(int argc, char *argv[]) {
   btnComparar->setCursor(Qt::PointingHandCursor);
   leftLayout->addWidget(btnComparar);
 
-  // Panel de resultados educativo — muestra detalle por ruta después de calcular
   QLabel *lblResultados = new QLabel("<b>Resultados del Calculo</b>", leftPanel);
   leftLayout->addWidget(lblResultados);
 
@@ -321,26 +295,18 @@ int main(int argc, char *argv[]) {
 
   leftLayout->addStretch();
 
-  // ==========================================
-  // Panel Derecho: Mapa (QWebEngineView)
-  // ==========================================
   QWebEngineView *mapView = new QWebEngineView(splitter);
   mapView->settings()->setAttribute(
       QWebEngineSettings::LocalContentCanAccessRemoteUrls, true);
 
-  // Instanciar nuestro bridge para comunicar C++ y JS
   VrpBridge *bridge = new VrpBridge(&mainWindow);
 
-  // Configurar el QWebChannel
   QWebChannel *channel = new QWebChannel(mapView->page());
   channel->registerObject("interfazBridge", bridge);
   mapView->page()->setWebChannel(channel);
 
-  // Cargar mapa.html desde el directorio del ejecutable
-  // (POST_BUILD en CMakeLists.txt copia resources/mapa.html aquí)
   QString rutaMapa = QCoreApplication::applicationDirPath() + "/mapa.html";
-  // Fallback: si no existe, intenta en la subcarpeta resources/ (desarrollo
-  // local)
+  
   if (!QFile::exists(rutaMapa))
     rutaMapa = QCoreApplication::applicationDirPath() + "/resources/mapa.html";
   mapView->setUrl(QUrl::fromLocalFile(rutaMapa));
@@ -348,22 +314,16 @@ int main(int argc, char *argv[]) {
   splitter->setStretchFactor(0, 1);
   splitter->setStretchFactor(1, 3);
 
-  // ==========================================
-  // Eventos (Signals y Slots)
-  // ==========================================
-
-  // Botón Agregar Depósito → crea marcador draggable en el centro del mapa
   QObject::connect(btnAgregarDeposito, &QPushButton::clicked, [=]() {
     QString nombre = txtNombreDeposito->text().trimmed();
     if (nombre.isEmpty())
-      nombre = "Depósito Central"; // nombre por defecto
+      nombre = "Depósito Central"; 
     nombre.replace("'", "\\'");
     mapView->page()->runJavaScript(
         QString("agregarMarcadorDeposito('%1');").arg(nombre));
     txtNombreDeposito->clear();
   });
 
-  // Botón Agregar Vehículo → registra en C++ Y muestra en la lista visual
   QObject::connect(btnAgregarVehiculo, &QPushButton::clicked, [=]() {
     QString placa = txtPlaca->text().trimmed();
     float capacidad = txtCapacidad->text().toFloat();
@@ -373,7 +333,7 @@ int main(int argc, char *argv[]) {
     v.placa = placa.toStdString();
     v.capacidad = capacidad;
     bridge->listaVehiculos.push_back(v);
-    // Mostrar en la lista visual con prefijo V{indice}
+    
     int vIdx = static_cast<int>(bridge->listaVehiculos.size()) - 1;
     listaVehiculosUI->addItem(
         QString("V%1  |  %2  |  Cap: %3").arg(vIdx).arg(placa).arg(capacidad));
@@ -381,8 +341,6 @@ int main(int argc, char *argv[]) {
     txtCapacidad->clear();
   });
 
-  // Botón Agregar Tienda → crea marcador draggable en el centro del mapa
-  // Usamos un contador para generar nombres únicos por defecto
   int contTienda = 1;
   double totalDemandaAcumulada = 0.0;
   QObject::connect(btnAgregarTienda, &QPushButton::clicked, [&]() {
@@ -394,7 +352,7 @@ int main(int argc, char *argv[]) {
     totalDemandaAcumulada += demanda;
     lblDemandaTotal->setText(
         QString("Demanda total del viaje: %1").arg(totalDemandaAcumulada));
-    // Agregar a la lista visual
+    
     QListWidgetItem *item = new QListWidgetItem(
         QString("%1  |  Dem: %2").arg(nombre).arg(demanda));
     item->setData(Qt::UserRole, nombre);
@@ -407,7 +365,6 @@ int main(int argc, char *argv[]) {
     txtDemandaTienda->clear();
   });
 
-  // Botón Eliminar Vehículo seleccionado
   QObject::connect(btnEliminarVehiculo, &QPushButton::clicked, [=, &mainWindow]() {
     int row = listaVehiculosUI->currentRow();
     if (row < 0) {
@@ -420,7 +377,6 @@ int main(int argc, char *argv[]) {
     delete listaVehiculosUI->takeItem(row);
   });
 
-  // Botón Eliminar Tienda seleccionada
   QObject::connect(btnEliminarTienda, &QPushButton::clicked, [=, &mainWindow, &totalDemandaAcumulada]() {
     QListWidgetItem *item = listaTiendasUI->currentItem();
     if (!item) {
@@ -429,7 +385,7 @@ int main(int argc, char *argv[]) {
       return;
     }
     QString nombre = item->data(Qt::UserRole).toString();
-    // Buscar y eliminar de bridge->listaNodos
+    
     auto &nodos = bridge->listaNodos;
     for (auto it = nodos.begin(); it != nodos.end(); ++it) {
       if (!it->esDeposito && QString::fromStdString(it->nombre) == nombre) {
@@ -438,20 +394,20 @@ int main(int argc, char *argv[]) {
         break;
       }
     }
-    // Re-indexar nodos restantes
+    
     for (int i = 0; i < static_cast<int>(nodos.size()); ++i) {
       nodos[i].id = i;
       nodos[i].grafoNodeId = i;
     }
     lblDemandaTotal->setText(
         QString("Demanda total del viaje: %1").arg(totalDemandaAcumulada));
-    // Eliminar marcador del mapa
+    
     QString nombreJS = nombre;
     nombreJS.replace("'", "\\'");
     mapView->page()->runJavaScript(
         QString("if (typeof eliminarMarcadorCliente === 'function') "
                 "eliminarMarcadorCliente('%1');").arg(nombreJS));
-    // Limpiar rutas (ya no son válidas)
+    
     mapView->page()->runJavaScript(
         "if (typeof limpiarRutasPantalla === 'function') limpiarRutasPantalla();");
     resultsBrowser->setHtml(
@@ -460,8 +416,6 @@ int main(int argc, char *argv[]) {
     delete listaTiendasUI->takeItem(listaTiendasUI->currentRow());
   });
 
-  // ── Guardar sesión ────────────────────────────────────────────────────
-  // Serializa depósito + tiendas + vehículos a un archivo .vrp (JSON)
   QObject::connect(btnGuardar, &QPushButton::clicked, [=, &mainWindow]() {
     if (bridge->listaNodos.empty() && bridge->listaVehiculos.empty()) {
       QMessageBox::warning(&mainWindow, "Sesión vacía",
@@ -476,11 +430,9 @@ int main(int argc, char *argv[]) {
     if (ruta.isEmpty())
       return;
 
-    // ── Construir JSON ────────────────────────────────────────────────
     QJsonObject root;
     root["version"] = 1;
 
-    // Depósito (primer nodo con esDeposito == true)
     QJsonObject jDeposito;
     bool hayDeposito = false;
     for (const auto &nd : bridge->listaNodos) {
@@ -495,7 +447,6 @@ int main(int argc, char *argv[]) {
     if (hayDeposito)
       root["deposito"] = jDeposito;
 
-    // Tiendas (todos los nodos que NO son depósito)
     QJsonArray jTiendas;
     for (const auto &nd : bridge->listaNodos) {
       if (nd.esDeposito)
@@ -509,7 +460,6 @@ int main(int argc, char *argv[]) {
     }
     root["tiendas"] = jTiendas;
 
-    // Vehículos
     QJsonArray jVehiculos;
     for (const auto &v : bridge->listaVehiculos) {
       QJsonObject jV;
@@ -519,7 +469,6 @@ int main(int argc, char *argv[]) {
     }
     root["vehiculos"] = jVehiculos;
 
-    // ── Escribir archivo ──────────────────────────────────────────────
     QFile archivo(ruta);
     if (!archivo.open(QIODevice::WriteOnly | QIODevice::Text)) {
       QMessageBox::critical(&mainWindow, "Error",
@@ -546,7 +495,6 @@ int main(int argc, char *argv[]) {
             .arg(ruta));
   });
 
-  // ── Cargar sesión ─────────────────────────────────────────────────────
   QObject::connect(btnCargar, &QPushButton::clicked, [&]() {
     QString ruta = QFileDialog::getOpenFileName(
         &mainWindow, "Cargar sesión VRP", QDir::homePath(),
@@ -580,7 +528,6 @@ int main(int argc, char *argv[]) {
  Se intentará cargar de todas formas.");
     }
 
-    // ── Limpiar estado actual ─────────────────────────────────────────
     bridge->listaNodos.clear();
     bridge->listaVehiculos.clear();
     listaVehiculosUI->clear();
@@ -589,18 +536,15 @@ int main(int argc, char *argv[]) {
     totalDemandaAcumulada = 0.0;
     lblDemandaTotal->setText("Demanda total del viaje: 0");
 
-    // Limpiar marcadores y rutas en el mapa
     mapView->page()->runJavaScript(
         "if (typeof limpiarMarcadores === 'function') limpiarMarcadores();");
 
-    // ── Restaurar depósito ────────────────────────────────────────────
     if (root.contains("deposito") && root["deposito"].isObject()) {
       QJsonObject jDep = root["deposito"].toObject();
       QString depNombre = jDep["nombre"].toString("Depósito Central");
       double depLat = jDep["lat"].toDouble();
       double depLng = jDep["lng"].toDouble();
 
-      // Reconstruir nodo en el bridge
       Nodo dep;
       dep.id = 0;
       dep.grafoNodeId = 0;
@@ -611,7 +555,6 @@ int main(int argc, char *argv[]) {
       dep.demanda = 0.f;
       bridge->listaNodos.push_back(dep);
 
-      // Dibujar marcador en el mapa en la posición exacta guardada
       QString depNombreEscapado = depNombre;
       depNombreEscapado.replace("'", "\\'");
       mapView->page()->runJavaScript(
@@ -621,7 +564,6 @@ int main(int argc, char *argv[]) {
               .arg(depLng, 0, 'f', 8));
     }
 
-    // ── Restaurar tiendas ─────────────────────────────────────────────
     if (root.contains("tiendas") && root["tiendas"].isArray()) {
       QJsonArray jTiendas = root["tiendas"].toArray();
       for (const QJsonValue &val : jTiendas) {
@@ -634,7 +576,6 @@ int main(int argc, char *argv[]) {
         double lng = jT["lng"].toDouble();
         double demanda = jT["demanda"].toDouble();
 
-        // Reconstruir nodo en el bridge
         Nodo nd;
         nd.id = static_cast<int>(bridge->listaNodos.size());
         nd.grafoNodeId = nd.id;
@@ -648,13 +589,11 @@ int main(int argc, char *argv[]) {
         totalDemandaAcumulada += demanda;
         contTienda++;
 
-        // Agregar a lista visual de tiendas
         QListWidgetItem *tItem = new QListWidgetItem(
             QString("%1  |  Dem: %2").arg(nombre).arg(demanda));
         tItem->setData(Qt::UserRole, nombre);
         listaTiendasUI->addItem(tItem);
 
-        // Dibujar marcador en el mapa en la posición exacta guardada
         QString nombreEscapado = nombre;
         nombreEscapado.replace("'", "\\'");
         mapView->page()->runJavaScript(
@@ -666,7 +605,6 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    // ── Restaurar vehículos ───────────────────────────────────────────
     if (root.contains("vehiculos") && root["vehiculos"].isArray()) {
       QJsonArray jVehiculos = root["vehiculos"].toArray();
       for (const QJsonValue &val : jVehiculos) {
@@ -687,7 +625,6 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    // Actualizar etiqueta de demanda total
     lblDemandaTotal->setText(
         QString("Demanda total del viaje: %1").arg(totalDemandaAcumulada));
 
@@ -704,10 +641,8 @@ int main(int argc, char *argv[]) {
                                  .arg(nVehiculos));
   });
 
-  // Lógica principal: Calcular la ruta
   QObject::connect(btnCalcular, &QPushButton::clicked, [=, &mainWindow]() {
-    // ── Validación previa: demanda total vs. capacidad total de la flota
-    // ────────
+    
     float demandaTotal = 0.f;
     float capacidadTotal = 0.f;
 
@@ -736,18 +671,13 @@ int main(int argc, char *argv[]) {
       return;
     }
 
-    // 1. Limpiar rutas anteriores: resetea capas, grupos y el control de capas
-    //    Se llama limpiarRutasPantalla() que ya itera rutasPorVehiculo y
-    //    hace controlCapas.removeLayer() + map.removeLayer() en cada grupo.
     mapView->page()->runJavaScript("if (typeof limpiarRutasPantalla === "
                                    "'function') limpiarRutasPantalla();");
 
-    // 2. Calcular la MatrizDist (float, firma real de los algoritmos)
     MatrizDist matriz = bridge->calcularMatrizDistancias();
     QString alg = comboAlgoritmo->currentText();
     ResultadoAlgoritmo res;
 
-    // ── Advertencia educativa para Fuerza Bruta: mostrar O(n!) ──────────
     if (alg == "Fuerza Bruta") {
       int nCli = 0;
       for (const auto &nd : bridge->listaNodos)
@@ -810,8 +740,6 @@ int main(int argc, char *argv[]) {
         return;
     }
 
-    // 3. Llamar al algoritmo seleccionado con la firma real: (dist, nodos,
-    // vehiculos)
     if (alg == "Greedy") {
       res = ejecutarGreedy(matriz, bridge->listaNodos, bridge->listaVehiculos);
     } else if (alg == "Fuerza Bruta") {
@@ -822,31 +750,25 @@ int main(int argc, char *argv[]) {
           ejecutarGenetico(matriz, bridge->listaNodos, bridge->listaVehiculos);
     }
 
-    // 4. Graficar: ResultadoAlgoritmo.rutas es vector<vector<int>> (índices).
-    //    Cada ruta corresponde a un vehículo; se pasa su índice como idVehiculo
-    //    para que JS agrupe los segmentos en el Control de Capas correcto.
     QStringList colores = {"#e74c3c", "#3498db", "#2ecc71",
                            "#f39c12", "#9b59b6", "#1abc9c"};
 
     for (size_t i = 0; i < res.rutas.size(); ++i) {
       QString color = colores[static_cast<int>(i) % colores.size()];
-      // Usamos la placa del vehículo correspondiente en lugar del índice
+      
       QString placaVehiculo =
           QString::fromStdString(bridge->listaVehiculos[i].placa);
-      const auto &ruta = res.rutas[i]; // vector<int> de índices
+      const auto &ruta = res.rutas[i]; 
 
       for (size_t j = 0; j + 1 < ruta.size(); ++j) {
         const Nodo &a = bridge->listaNodos[ruta[j]];
         const Nodo &b = bridge->listaNodos[ruta[j + 1]];
 
-        // pos_x = lng, pos_y = lat  (ver recibirCoordenadasCliente)
         double lat1 = static_cast<double>(a.pos_y);
         double lng1 = static_cast<double>(a.pos_x);
         double lat2 = static_cast<double>(b.pos_y);
         double lng2 = static_cast<double>(b.pos_x);
 
-        // Pasar placaVehiculo como 6.° argumento para agrupar en el Control de
-        // Capas
         QString jsCode = QString("if (typeof dibujarRutaVial === 'function') "
                                  "dibujarRutaVial(%1, %2, %3, %4, '%5', '%6');")
                              .arg(lat1, 0, 'f', 6)
@@ -858,7 +780,6 @@ int main(int argc, char *argv[]) {
         mapView->page()->runJavaScript(jsCode);
       }
 
-      // Etiquetar cada parada con su vehiculo y orden: "V{i} | P{orden}"
       int stopOrder = 1;
       for (size_t j = 0; j < ruta.size(); ++j) {
         if (ruta[j] < static_cast<int>(bridge->listaNodos.size()) &&
@@ -877,7 +798,6 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    // ── Resultados: mostrar panel educativo con detalle por ruta ────────
     double distFinal = res.distanciaTotal;
     bool rutaIncompleta = (distFinal >= 1e8);
     int clientesFuera = 0;
@@ -885,7 +805,7 @@ int main(int argc, char *argv[]) {
     if (rutaIncompleta) {
       clientesFuera = static_cast<int>(distFinal / 1e9);
       distFinal = std::fmod(distFinal, 1e9);
-      QMessageBox::warning(&mainWindow, "Problema de Empaquetado (Bin Packing)",
+      QMessageBox::warning(&mainWindow, "Problema de Empaquetado",
                            QString("No se traz\u00f3 la ruta completa. "
                                    "Quedaron %1 tienda(s) sin asignar.\n\n"
                                    "Soluci\u00f3n: Agrega un veh\u00edculo "
@@ -893,7 +813,6 @@ int main(int argc, char *argv[]) {
                                .arg(clientesFuera));
     }
 
-    // Mapear algoritmo a nombre y complejidad
     QString algNombre, algComplejidad;
     if (alg == "Greedy") {
       algNombre = "Greedy (Nearest Neighbor)";
@@ -906,7 +825,6 @@ int main(int argc, char *argv[]) {
       algComplejidad = "O(G * P * n)";
     }
 
-    // ── Construir HTML sin emojis ─────────────────────────────────────────
     QString html;
     html += QString("<b style='font-size:13px;'>%1</b><br>").arg(algNombre);
     html += QString("<span style='color:#555; font-size:11px;'>"
@@ -924,7 +842,6 @@ int main(int argc, char *argv[]) {
 
     html += "<hr style='border:none; border-top:1px solid #ccc; margin:4px 0;'>";
 
-    // Detalle por ruta/vehículo
     const auto &nodos = bridge->listaNodos;
     const auto &vehis = bridge->listaVehiculos;
     for (size_t ri = 0; ri < res.rutas.size(); ++ri) {
@@ -963,7 +880,6 @@ int main(int argc, char *argv[]) {
     resultsBrowser->setHtml(html);
   });
 
-  // ── Comparar Algoritmos: ventana educativa con tabla completa ──────────────
   QObject::connect(btnComparar, &QPushButton::clicked, [&mainWindow, bridge]() {
     if (bridge->listaNodos.empty() || bridge->listaVehiculos.empty()) {
       QMessageBox::warning(&mainWindow, "Datos incompletos",
@@ -972,13 +888,11 @@ int main(int argc, char *argv[]) {
       return;
     }
 
-    // Contar clientes y vehículos para mostrar en el encabezado
     int nCli = 0, nVehi = static_cast<int>(bridge->listaVehiculos.size());
     for (const auto &nd : bridge->listaNodos)
       if (!nd.esDeposito)
         ++nCli;
 
-    // Advertencia si Fuerza Bruta puede tardar demasiado
     if (nCli > 8) {
       long long fact = 1;
       bool ovf = false;
@@ -1006,7 +920,6 @@ int main(int argc, char *argv[]) {
 
     MatrizDist matriz = bridge->calcularMatrizDistancias();
 
-    // Ejecutar los tres algoritmos
     ResultadoAlgoritmo resG =
         ejecutarGreedy(matriz, bridge->listaNodos, bridge->listaVehiculos);
     ResultadoAlgoritmo resGEN =
@@ -1014,7 +927,6 @@ int main(int argc, char *argv[]) {
     ResultadoAlgoritmo resFB =
         ejecutarFuerzaBruta(matriz, bridge->listaNodos, bridge->listaVehiculos);
 
-    // Extraer distancias reales (sin el factor de penalización 1e9)
     double dG = resG.distanciaTotal, dGEN = resGEN.distanciaTotal,
            dFB = resFB.distanciaTotal;
     bool incG = (dG >= 1e8), incGEN = (dGEN >= 1e8), incFB = (dFB >= 1e8);
@@ -1025,7 +937,6 @@ int main(int argc, char *argv[]) {
     if (incFB)
       dFB = std::fmod(dFB, 1e9);
 
-    // Mejor distancia entre rutas completas
     double dMin = std::numeric_limits<double>::max();
     if (!incG)
       dMin = std::min(dMin, dG);
@@ -1034,14 +945,13 @@ int main(int argc, char *argv[]) {
     if (!incFB)
       dMin = std::min(dMin, dFB);
     if (dMin == std::numeric_limits<double>::max())
-      dMin = std::min(std::min(dG, dGEN), dFB); // si todas incompletas
+      dMin = std::min(std::min(dG, dGEN), dFB); 
 
-    // ── Crear el diálogo con QTableWidget (escala bien al redimensionar) ──
     QDialog *dlg = new QDialog(&mainWindow);
     dlg->setWindowTitle("Comparacion de Algoritmos - VRP Logistica");
     dlg->setMinimumSize(700, 400);
     dlg->resize(860, 600);
-    // Habilitar boton de maximizar en la barra de titulo
+    
     dlg->setWindowFlags(dlg->windowFlags()
                         | Qt::WindowMaximizeButtonHint
                         | Qt::WindowMinimizeButtonHint);
@@ -1051,7 +961,6 @@ int main(int argc, char *argv[]) {
     dlgLayout->setContentsMargins(16, 12, 16, 12);
     dlgLayout->setSpacing(8);
 
-    // Título
     QLabel *dlgTitle = new QLabel(
         QString("<b style='font-size:15px;'>Comparacion de Algoritmos - VRP</b>"
                 "<br><span style='font-size:11px; color:#555;'>"
@@ -1061,7 +970,6 @@ int main(int argc, char *argv[]) {
     dlgTitle->setStyleSheet("padding:6px; background:#f0f0f0; border:1px solid #ccc; border-radius:4px;");
     dlgLayout->addWidget(dlgTitle);
 
-    // Tabla de metricas
     QLabel *lblMetricas = new QLabel("<b>Metricas de rendimiento</b>", dlg);
     dlgLayout->addWidget(lblMetricas);
 
@@ -1080,11 +988,10 @@ int main(int argc, char *argv[]) {
     tblMetricas->setSizeAdjustPolicy(QAbstractScrollArea::AdjustToContents);
     tblMetricas->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
-    // Colores de fila
     auto rowColor = [&](double d, bool inc) -> QColor {
-      if (inc)                          return QColor("#f5c6cb"); // rojo
-      if (std::abs(d - dMin) < 0.01)   return QColor("#c3e6cb"); // verde
-      return QColor("#ffeeba");                                   // amarillo
+      if (inc)                          return QColor("#f5c6cb"); 
+      if (std::abs(d - dMin) < 0.01)   return QColor("#c3e6cb"); 
+      return QColor("#ffeeba");                                   
     };
     auto qualText = [&](double d, bool inc) -> QString {
       if (inc) return "Ruta incompleta";
@@ -1094,7 +1001,6 @@ int main(int argc, char *argv[]) {
       return QString("+%1 % sobre el mejor").arg(pct, 0, 'f', 2);
     };
 
-    // Datos de las tres filas
     struct RowData { QString nombre; QString complejidad; double dist; double tms; bool inc; };
     std::vector<RowData> filas = {
       {"Greedy (Nearest Neighbor)",    "O(n^2 * V)", dG,   resG.tiempoMs,   incG  },
@@ -1122,7 +1028,6 @@ int main(int argc, char *argv[]) {
     tblMetricas->resizeRowsToContents();
     dlgLayout->addWidget(tblMetricas);
 
-    // Tabla de ventajas y limitaciones
     QLabel *lblVL = new QLabel("<b>Ventajas y Limitaciones</b>", dlg);
     dlgLayout->addWidget(lblVL);
 
@@ -1168,7 +1073,6 @@ int main(int argc, char *argv[]) {
     tblVL->resizeRowsToContents();
     dlgLayout->addWidget(tblVL);
 
-    // Nota al pie
     QLabel *nota = new QLabel(
         "Calidad: MEJOR = menor distancia encontrada entre los tres algoritmos.  "
         "+X% = su ruta es X% mas larga que la mejor.  "
@@ -1178,7 +1082,6 @@ int main(int argc, char *argv[]) {
                         "background:#f8f8f8; border:1px solid #ddd; border-radius:3px;");
     dlgLayout->addWidget(nota);
 
-    // Botones: Maximizar + Cerrar
     QPushButton *btnMaximizar = new QPushButton("Maximizar", dlg);
     btnMaximizar->setStyleSheet(
         "QPushButton { background-color:#5c6bc0; color:white; font-weight:bold;"
@@ -1209,6 +1112,4 @@ int main(int argc, char *argv[]) {
   return app.exec();
 }
 
-// Requerido por MOC ya que hemos declarado una clase con Q_OBJECT dentro del
-// archivo .cpp
 #include "main.moc"
