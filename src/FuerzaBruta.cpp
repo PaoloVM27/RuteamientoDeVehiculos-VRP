@@ -3,8 +3,7 @@
 #include <chrono>
 #include <limits>
 
-// Fuerza bruta: prueba todas las permutaciones de clientes.
-// Usa demandaTotal() para la validación de capacidad.
+
 ResultadoAlgoritmo ejecutarFuerzaBruta(
     const MatrizDist& dist,
     const std::vector<Nodo>& nodos,
@@ -61,7 +60,6 @@ ResultadoAlgoritmo ejecutarFuerzaBruta(
             rutasAct.push_back(ruta);
         }
 
-        // Penalización por clientes no asignados
         if (ci < clienteIdxs.size()) {
             distAct += 1e9 * static_cast<double>(clienteIdxs.size() - ci);
         }
@@ -73,7 +71,6 @@ ResultadoAlgoritmo ejecutarFuerzaBruta(
 
     } while (std::next_permutation(clienteIdxs.begin(), clienteIdxs.end()));
 
-    // Si la mejor distancia es mayor o igual a 1e9, significa que no se pudo asignar todo
     auto t1 = std::chrono::high_resolution_clock::now();
     mejor.tiempoMs = std::chrono::duration<double, std::milli>(t1 - t0).count();
     return mejor;

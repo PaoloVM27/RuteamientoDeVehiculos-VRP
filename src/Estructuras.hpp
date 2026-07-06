@@ -2,79 +2,75 @@
 #include <string>
 #include <vector>
 
-// ─── Productos ────────────────────────────────────────────────────────────────
 struct Producto {
-    std::string nombre;
-    float       peso;   // kg
+  std::string nombre;
+  float peso; 
 };
 
-// Suma el peso total de productos de un nodo
-inline float demandaTotal(const std::vector<Producto>& prods) {
-    float t = 0.f;
-    for (const auto& p : prods) t += p.peso;
-    return t;
+inline float demandaTotal(const std::vector<Producto> &prods) {
+  float t = 0.f;
+  for (const auto &p : prods)
+    t += p.peso;
+  return t;
 }
 
-// ─── Grafo de calles ──────────────────────────────────────────────────────────
 struct NodoGrafo {
-    int   id;
-    float x, y;
-    std::string nombre;
-    bool  esAvenida;
+  int id;
+  float x, y;
+  std::string nombre;
+  bool esAvenida;
 };
 
 struct Arista {
-    int   desde, hasta;
-    float metros;
-    bool  esAvenida;
+  int desde, hasta;
+  float metros;
+  bool esAvenida;
 };
 
 struct Grafo {
-    std::vector<NodoGrafo>                             nodos;
-    std::vector<Arista>                                aristas;
-    std::vector<std::vector<std::pair<int, float>>>    adj;
+  std::vector<NodoGrafo> nodos;
+  std::vector<Arista> aristas;
+  std::vector<std::vector<std::pair<int, float>>> adj;
 };
 
-using MatrizDist    = std::vector<std::vector<float>>;
+using MatrizDist = std::vector<std::vector<float>>;
 using MatrizCaminos = std::vector<std::vector<std::vector<int>>>;
 
 struct InfoRutas {
-    MatrizDist    distancias;
-    MatrizCaminos caminos;
+  MatrizDist distancias;
+  MatrizCaminos caminos;
 };
 
-// ─── Nodos VRP ────────────────────────────────────────────────────────────────
 struct Nodo {
-    int   id;
-    std::string nombre;
-    float pos_x, pos_y;
-    std::vector<Producto> productos;  // lista de productos (flujo avanzado)
-    float demanda = 0.f;              // demanda escalar directa (modelo CVRP simple)
-    bool  esDeposito;
-    int   grafoNodeId = -1;
-    int   vehiculoAsignado = -1;      // -1 = Auto, 0..N = id vehiculo forzado
+  int id;
+  std::string nombre;
+  float pos_x, pos_y;
+  std::vector<Producto> productos;
+  float demanda = 0.f;
+  bool esDeposito;
+  int grafoNodeId = -1;
+  int vehiculoAsignado = -1;
 
-    // Retorna la carga real: usa demanda directa si no hay productos, o la suma de pesos
-    float cargaEfectiva() const {
-        if (!productos.empty()) {
-            float t = 0.f;
-            for (const auto& p : productos) t += p.peso;
-            return t;
-        }
-        return demanda;
+  float cargaEfectiva() const {
+    if (!productos.empty()) {
+      float t = 0.f;
+      for (const auto &p : productos)
+        t += p.peso;
+      return t;
     }
+    return demanda;
+  }
 };
 
-// ─── Vehículos — todos salen del depósito, sin inicio_x/y ────────────────────
 struct Vehiculo {
-    int   id;
-    std::string placa;
-    float capacidad;
-    float carga_actual;
+  int id;
+  std::string placa;
+  float capacidad;
+  float carga_actual;
 };
 
 struct ResultadoAlgoritmo {
-    std::vector<std::vector<int>> rutas;
-    double distanciaTotal;
-    double tiempoMs;
+  std::vector<std::vector<int>> rutas;
+  double distanciaTotal;
+  double tiempoMs;
 };
